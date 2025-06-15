@@ -1,6 +1,6 @@
 import java.util.Random;
 
-public class PatternMatching {
+public class PatternMatchingKMP {
     static long instrucoes = 0;
     static long iteracoes = 0;
 
@@ -14,22 +14,22 @@ public class PatternMatching {
         // Teste com entrada pequena
         resetContagem();
         long tempoInicial = System.nanoTime();
-        encontrarPrimeiraOcorrencia(inputPequeno, pattern);
+        KMPSearch(inputPequeno, pattern);
         long tempoFinal = System.nanoTime();
         double tempoTotal = (tempoFinal - tempoInicial) / 1_000_000.0;
         resultados[0] = new String[]{
-            "Pattern Matching naive", pattern, inputPequeno,
+            "Pattern Matching KMP", pattern, inputPequeno,
             String.valueOf(iteracoes), String.valueOf(instrucoes), String.valueOf(tempoTotal)
         };
 
         // Teste com entrada grande
         resetContagem();
         tempoInicial = System.nanoTime();
-        encontrarPrimeiraOcorrencia(inputGrande, pattern);
+        KMPSearch(inputGrande, pattern);
         tempoFinal = System.nanoTime();
         tempoTotal = (tempoFinal - tempoInicial) / 1_000_000.0;
         resultados[1] = new String[]{
-            "Pattern Matching naive", pattern, "String aleatoria de 500.000 caracteres + padrão",
+            "Pattern Matching KMP", pattern, "String aleatoria de 500.000 caracteres + padrão",
             String.valueOf(iteracoes), String.valueOf(instrucoes), String.valueOf(tempoTotal)
         };
         System.out.println();
@@ -37,36 +37,6 @@ public class PatternMatching {
         System.out.println();
     }
 
-    /*
-     * Encontra a posição da primeira ocorrência de um padrão em uma string.
-     */
-    public static int encontrarPrimeiraOcorrencia(String input, String pattern) {
-        int n = input.length();
-        int m = pattern.length();
-        instrucoes += 2;
-
-        for (int i = 0; i <= n - m; i++) {
-            iteracoes++;
-            instrucoes++;
-
-            int j = 0;
-            instrucoes++;
-
-            while (j < m && input.charAt(i + j) == pattern.charAt(j)) {
-                instrucoes += 3;
-                j++;
-                iteracoes++;
-            }
-
-            instrucoes++;
-            if (j == m) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    // Função para gerar uma string aleatória com letras maiúsculas
     public static String gerarStringAleatoria(int tamanho) {
         Random random = new Random();
         StringBuilder sb = new StringBuilder(tamanho);
@@ -82,26 +52,90 @@ public class PatternMatching {
         iteracoes = 0;
     }
 
-    // Função para imprimir a tabela de resultados
+    static void KMPSearch(String txt, String pat) {
+        int M = pat.length();
+        int N = txt.length();
+
+        int lps[] = new int[M];
+        int j = 0;
+
+        computeLPSArray(pat, M, lps);
+
+        int i = 0;
+        while (i < N) {
+            iteracoes++;
+
+            instrucoes++;
+            if (pat.charAt(j) == txt.charAt(i)) {
+                j++;
+                i++;
+                instrucoes += 2;
+            }
+
+            instrucoes++;
+            if (j == M) {
+                System.out.println("Padrão encontrado no indice: " + (i - j));
+                j = lps[j - 1];
+                instrucoes++;
+            }
+
+            instrucoes++;
+            if (i < N && j < M && pat.charAt(j) != txt.charAt(i)) {
+                if (j != 0) {
+                    j = lps[j - 1];
+                    instrucoes++;
+                } else {
+                    i = i + 1;
+                    instrucoes++;
+                }
+            }
+        }
+    }
+
+    static void computeLPSArray(String pat, int M, int lps[]) {
+        int len = 0;
+        int i = 1;
+        lps[0] = 0;
+        instrucoes++;
+
+        while (i < M) {
+            iteracoes++;
+            instrucoes++;
+            if (pat.charAt(i) == pat.charAt(len)) {
+                len++;
+                lps[i] = len;
+                i++;
+                instrucoes += 3;
+            } else {
+                instrucoes++;
+                if (len != 0) {
+                    len = lps[len - 1];
+                    instrucoes++;
+                } else {
+                    lps[i] = 0;
+                    i++;
+                    instrucoes += 2;
+                }
+            }
+        }
+    }
+
     public static void printTable(String[][] rows) {
         String[] headers = {"Algoritmo", "Padrão", "Texto", "Iterações", "Instruções", "Tempo (ms)"};
-        int[] widths = {25, 8, 50, 12, 13, 12};
+        int[] widths = {20, 8, 50, 12, 13, 12};
 
-        // Imprime cabeçalhos
         for (int i = 0; i < headers.length; i++) {
             System.out.printf("%-" + widths[i] + "s", headers[i]);
             if (i < headers.length - 1) System.out.print(" | ");
         }
         System.out.println();
 
-        // Linha de divisão
         for (int width : widths) {
             System.out.print("-".repeat(width));
             System.out.print("-+-");
         }
         System.out.println();
 
-        // Dados
         for (String[] row : rows) {
             for (int i = 0; i < row.length; i++) {
                 System.out.printf("%-" + widths[i] + "s", row[i]);
